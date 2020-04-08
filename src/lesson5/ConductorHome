@@ -1,0 +1,99 @@
+package lesson5;
+
+import javax.swing.*;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import java.io.File;
+import java.util.Date;
+
+public class ConductorHome {
+    public static void main (String[] args){
+        var frame = new ConductorFrame();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+}
+class ConductorFrame extends JFrame {
+    private static final int DEFAULT_WIDTH = 1200;
+    private static final int DEFAULT_HEIGHT = 800;
+    private static final String[] columnNames = {
+            "Name",
+            "Size",
+            "Date"
+    };
+
+    private void fullReadFileRoot(File file, DefaultMutableTreeNode defaultMutableTreeNode) {
+        if (file.listFiles() != null) {
+            for (File item : file.listFiles()) {
+                if (item.isDirectory()) {
+                    DefaultMutableTreeNode root = new DefaultMutableTreeNode(new File(item.getAbsolutePath()), true);
+                    defaultMutableTreeNode.add(root);
+                    fullReadFileRoot(new File(item.getAbsolutePath()), root);
+                }
+            }
+        } else {
+            return;
+        }
+    }
+
+    private void RefreshTable(JSplitPane jsp, File file){
+        JTable table;
+        if (file.listFiles() != null) {
+            File[] list = file.listFiles();
+            String[][] information = new String[list.length][3];
+            for (int i = 0; i < list.length; i++) {
+                information[i][0] = list[i].getName();
+                information[i][1] = Long.toString(list[i].length());
+                information[i][2] = new Date(list[i].lastModified()).toString();
+            }
+            table = new JTable(information, columnNames);
+        }else{
+            table = new JTable();
+        }
+        JScrollPane scrollTable = new JScrollPane(table);
+        jsp.setRightComponent(scrollTable);
+    }
+
+    public ConductorFrame() {
+        super("Conductor!");
+        setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+
+        JSplitPane jsp = new JSplitPane();
+        add(jsp);
+
+
+        JTable table = new JTable();
+        JScrollPane scrollTable = new JScrollPane(table);
+        jsp.setRightComponent(scrollTable);
+
+
+        JTree tree = new JTree();
+        JScrollPane scrollTree = new JScrollPane(tree);
+        jsp.setLeftComponent(scrollTree);
+
+        DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
+        renderer.setLeafIcon  (new ImageIcon());
+        renderer.setOpenIcon  (new ImageIcon());
+        renderer.setClosedIcon(new ImageIcon());
+        tree.setCellRenderer(renderer);
+
+        String pathFile = "D:\\";
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new File(pathFile), true);
+        fullReadFileRoot(new File(pathFile), root);
+
+        tree.addTreeSelectionListener(new TreeSelectionListener() {
+            @Override
+            public void valueChanged(TreeSelectionEvent e) {
+                File file = (File) ((DefaultMutableTreeNode) e.getNewLeadSelectionPath().getLastPathComponent()).getUserObject();
+                RefreshTable(jsp, file);
+            }
+        });
+
+        DefaultTreeModel dtr = (DefaultTreeModel) tree.getModel();
+        dtr.setRoot(root);
+    }
+}
+
